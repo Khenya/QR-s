@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Text, View, Button, StyleSheet } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Application from "expo-application";
 import { supabase } from '../../src/utils/supabase';
 
