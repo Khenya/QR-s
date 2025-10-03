@@ -60,7 +60,7 @@ export default function HomeScreen() {
         console.log("Error guardando:", error.message);
         alert("Error al guardar el código QR");
       } else {
-        alert(`QR guardado: ${data}\nHora: ${boliviaTime.toLocaleString('es-BO')}`);
+        alert(`Gracias por escanear el código QR. Su asistencia ha sido registrada.`);
       }
     } catch (error) {
       console.log("Error:", error);
