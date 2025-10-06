@@ -1,15 +1,72 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
+import { Platform, StyleSheet,TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import * as Location from 'expo-location';
+import { supabase } from '../../src/utils/supabase';
+//import { Collapsible } from '@/components/ui/collapsible';
+//import { ExternalLink } from '@/components/external-link';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
-
+import { Colors, Fonts } from '@/constants/theme';
 export default function TabTwoScreen() {
+  const [nombre, setNombre] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!nombre.trim()) {
+      Alert.alert('Error', 'Por favor, ingresa tu nombre.');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // permisos(parecido a index)
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        latitude = location.coords.latitude;
+        longitude = location.coords.longitude;
+      } else {
+        Alert.alert('Advertencia', 'No se otorgó permiso de ubicación. Se guardará sin coordenadas.');
+      }
+
+      
+      const currentTime = new Date();
+      const boliviaTime = new Date(currentTime.getTime() - 4 * 60 * 60 * 1000);
+
+      
+      const { error } = await supabase.from('comment').insert([
+        {
+          nombre: nombre.trim(),
+          enviado_at: boliviaTime.toISOString(),
+          latitude,
+          longitude,
+        },
+      ]);
+
+      if (error) {
+        console.log('Error guardando:', error.message);
+        throw error;
+      }
+
+      
+      Alert.alert(
+        'Registro Completo!',
+        'Tu asistencia se guardó correctamente. Gracias por usar la app.',
+        [{ text: 'OK', onPress: () => setNombre('') }]
+      );
+    } catch (error) {
+      console.error('Error al guardar asistencia:', error);
+      Alert.alert('Error', 'No se pudo guardar la asistencia. Intenta de nuevo.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -27,73 +84,33 @@ export default function TabTwoScreen() {
           style={{
             fontFamily: Fonts.rounded,
           }}>
-          Explore
+          Comentarios
         </ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
+      <ThemedText style={styles.prompt}>
+        ¿Olvidaste tu celular? Ingresa tu nombre para registrar tu llegada.
+      </ThemedText>
+      <TextInput
+        style={styles.input}
+        placeholder="Tu nombre completo"
+        placeholderTextColor={Colors.light.tabIconDefault}
+        value={nombre}
+        onChangeText={setNombre}
+        autoCapitalize="words"
+        editable={!isProcessing}
+      />
+      <TouchableOpacity
+        style={[styles.button, isProcessing && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={isProcessing}>
+        {isProcessing ? (
+          <ActivityIndicator color={Colors.light.background} />
+        ) : (
+          <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+            Registrar Llegada
+          </ThemedText>
+        )}
+      </TouchableOpacity>
     </ParallaxScrollView>
   );
 }
@@ -108,5 +125,41 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+  },
+  prompt: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 20,
+    lineHeight: 22,
+    color: Colors.light.text,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    width: '100%',
+    maxWidth: 300,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    alignSelf: 'center',
+    color: Colors.light.text,
+  },
+  button: {
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 200,
+    alignSelf: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: Colors.light.tabIconDefault,
+  },
+  buttonText: {
+    color: Colors.light.background,
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
