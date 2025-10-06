@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Fonts } from '@/constants/theme';
+
 export default function TabTwoScreen() {
   const [nombre, setNombre] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -69,13 +70,12 @@ export default function TabTwoScreen() {
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerBackgroundColor={{ light: '#165290', dark: '#165290' }}
       headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
+        <Image
+          source={require('../../assets/images/indeca.png')}
           style={styles.headerImage}
+          contentFit="contain"
         />
       }>
       <ThemedView style={styles.titleContainer}>
@@ -83,8 +83,9 @@ export default function TabTwoScreen() {
           type="title"
           style={{
             fontFamily: Fonts.rounded,
+            color: Colors.light.primary,
           }}>
-          Explore
+          Registro Manual
         </ThemedText>
       </ThemedView>
       <ThemedText style={styles.prompt}>
@@ -117,10 +118,11 @@ export default function TabTwoScreen() {
 
 const styles = StyleSheet.create({
   headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
+    width: 200,
+    height: 200,
     position: 'absolute',
+    bottom: -50,
+    right: 20,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -134,8 +136,8 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
     borderRadius: 8,
     padding: 12,
     width: '100%',
@@ -147,7 +149,7 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   button: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: Colors.light.secondary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -158,8 +160,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tabIconDefault,
   },
   buttonText: {
-    color: Colors.light.background,
+    color: Colors.light.white,
     fontSize: 16,
     textAlign: 'center',
+    fontWeight: '600',
   },
 });
