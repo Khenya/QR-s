@@ -5,6 +5,15 @@ import * as Application from "expo-application";
 import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
 
+// Configurar el área permitida (ejemplo: coordenadas de INDECA)
+const ALLOWED_AREA = {
+  center: {
+    latitude: -16.52343326, // Reemplaza con la latitud de INDECA
+    longitude: -68.084740, // Reemplaza con la longitud de INDECA
+  },
+  radius: 100, // Radio en metros (100m = ~1 cuadra)
+};
+
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -12,27 +21,87 @@ export default function HomeScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [canScan, setCanScan] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [isInAllowedArea, setIsInAllowedArea] = useState<boolean | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const lastScannedRef = useRef<string>('');
   const lastScanTimeRef = useRef<number>(0);
-  const time = useRef<number>(0);
-
-  useEffect(() => {
-    time.current = Date.now();
-  }, []);
 
   useEffect(() => {
     (async () => {
       try {
         const id = Application.getAndroidId();
         setDeviceId(id || "unknown-device");
-        // Verificar último scan al cargar la app
         await checkLastScan(id || "unknown-device");
+        await checkLocation();
       } catch {
         setDeviceId("unknown-device");
         await checkLastScan("unknown-device");
+        await checkLocation();
       }
     })();
   }, []);
+
+  // Función para calcular la distancia entre dos puntos en metros
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Radio de la Tierra en metros
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distancia en metros
+  };
+
+  // Verificar si está en el área permitida
+  const checkLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setIsInAllowedArea(false);
+        Alert.alert(
+          'Permiso de ubicación requerido',
+          'Necesitamos acceso a tu ubicación para verificar que estés en el área de trabajo.'
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = location.coords;
+      setCurrentLocation({ latitude, longitude });
+
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        ALLOWED_AREA.center.latitude,
+        ALLOWED_AREA.center.longitude
+      );
+
+      const inArea = distance <= ALLOWED_AREA.radius;
+      setIsInAllowedArea(inArea);
+
+      if (!inArea) {
+        Alert.alert(
+          'Fuera del área de trabajo',
+          `Debes estar dentro del área de trabajo para escanear códigos QR.\nDistancia actual: ${Math.round(distance)}m\nDistancia máxima: ${ALLOWED_AREA.radius}m`
+        );
+      }
+    } catch (error) {
+      console.log('Error obteniendo ubicación:', error);
+      setIsInAllowedArea(false);
+      Alert.alert(
+        'Error de ubicación',
+        'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.'
+      );
+    }
+  };
 
   const checkLastScan = async (deviceId: string) => {
     try {
@@ -52,14 +121,13 @@ export default function HomeScreen() {
         const lastScanTime = new Date(data[0].scanned_at);
         const now = new Date();
         const timeDiff = now.getTime() - lastScanTime.getTime();
-        const twoHoursInMs = 2 * 60 * 60 * 1000; // 2 horas en milisegundos
+        const twoHoursInMs = 2 * 60 * 60 * 1000;
 
         if (timeDiff < twoHoursInMs) {
           setCanScan(false);
           const remainingTime = twoHoursInMs - timeDiff;
           updateTimeRemaining(remainingTime);
           
-          // Actualizar el tiempo restante cada minuto
           const interval = setInterval(() => {
             const newNow = new Date();
             const newTimeDiff = newNow.getTime() - lastScanTime.getTime();
@@ -72,7 +140,7 @@ export default function HomeScreen() {
             } else {
               updateTimeRemaining(newRemainingTime);
             }
-          }, 60000); // Actualizar cada minuto
+          }, 60000);
 
           return () => clearInterval(interval);
         } else {
@@ -96,6 +164,15 @@ export default function HomeScreen() {
   };
 
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    // Verificar si está en el área permitida
+    if (isInAllowedArea === false) {
+      Alert.alert(
+        'Fuera del área de trabajo',
+        'Debes estar dentro del área de trabajo para escanear códigos QR.'
+      );
+      return;
+    }
+
     if (!canScan) {
       Alert.alert(
         'Escaneo no permitido',
@@ -122,23 +199,22 @@ export default function HomeScreen() {
     setScanned(true);
 
     try {
-      // pedir permisos de ubicación
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Error", "No se otorgó permiso de ubicación.");
+      // Verificar ubicación nuevamente antes de guardar
+      await checkLocation();
+      
+      if (isInAllowedArea === false) {
+        Alert.alert(
+          'Fuera del área de trabajo',
+          'Te has movido fuera del área permitida.'
+        );
+        setIsProcessing(false);
+        setScanned(false);
         return;
       }
 
-      // obtener ubicación actual
-      const location = await Location.getCurrentPositionAsync({});
-      const latitude = location.coords.latitude;
-      const longitude = location.coords.longitude;
-
-      // hora ajustada
       const currentTime = new Date();
       const boliviaTime = new Date(currentTime.getTime() - (4 * 60 * 60 * 1000));
 
-      // guardar en supabase
       const { error } = await supabase
         .from("scans")
         .insert([
@@ -147,8 +223,8 @@ export default function HomeScreen() {
             device_id: deviceId,
             qr_code: data,
             scanned_at: boliviaTime.toISOString(),
-            latitude,
-            longitude
+            latitude: currentLocation?.latitude,
+            longitude: currentLocation?.longitude
           }
         ]);
 
@@ -164,11 +240,9 @@ export default function HomeScreen() {
               text: "OK",
               onPress: () => {
                 setCanScan(false);
-                // Configurar el bloqueo por 2 horas
                 const twoHoursInMs = 2 * 60 * 60 * 1000;
                 updateTimeRemaining(twoHoursInMs);
                 
-                // Configurar timer para habilitar el escaneo en 2 horas
                 setTimeout(() => {
                   setCanScan(true);
                   setTimeRemaining('');
@@ -212,6 +286,32 @@ export default function HomeScreen() {
     );
   }
 
+  // Pantalla cuando está fuera del área permitida
+  if (isInAllowedArea === false) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.blockedContainer}>
+          <Text style={styles.blockedTitle}>Fuera del área de trabajo</Text>
+          <Text style={styles.blockedMessage}>
+            Debes estar dentro del área de trabajo para escanear códigos QR
+          </Text>
+          {currentLocation && (
+            <Text style={styles.locationInfo}>
+              Ubicación actual: {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+            </Text>
+          )}
+          <View style={styles.buttonWrapper}>
+            <Button 
+              title="Verificar ubicación" 
+              onPress={checkLocation}
+              color="white"
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   if (!canScan) {
     return (
       <View style={styles.container}>
@@ -239,6 +339,11 @@ export default function HomeScreen() {
           barcodeTypes: ["qr", "pdf417"],
         }}
       />
+      {isInAllowedArea && (
+        <View style={styles.locationIndicator}>
+          <Text style={styles.locationText}>✓ En área de trabajo</Text>
+        </View>
+      )}
       {scanned && (
         <View style={styles.buttonContainer}>
           <Text style={styles.scanMessage}>
@@ -315,5 +420,30 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  locationIndicator: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 128, 0, 0.8)',
+    padding: 10,
+    borderRadius: 8,
+  },
+  locationText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  locationInfo: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  buttonWrapper: {
+    backgroundColor: '#ea7c37',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });
