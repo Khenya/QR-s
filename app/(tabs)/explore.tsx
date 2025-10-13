@@ -101,7 +101,7 @@ export default function TabTwoScreen() {
           style={{
             fontFamily: Fonts.rounded,
           }}>
-          Comentarios
+          Explore
         </ThemedText>
       </ThemedView>
       <ThemedText style={styles.prompt}>
