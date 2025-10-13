@@ -1,15 +1,29 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet,TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Platform, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
-//import { Collapsible } from '@/components/ui/collapsible';
-//import { ExternalLink } from '@/components/external-link';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Fonts } from '@/constants/theme';
+
+
+const COMPANY_LATITUDE = 0; 
+const COMPANY_LONGITUDE = 0; 
+const COMPANY_RADIUS_KM = 0.1; 
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; 
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 export default function TabTwoScreen() {
   const [nombre, setNombre] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,29 +36,33 @@ export default function TabTwoScreen() {
 
     setIsProcessing(true);
     try {
-      // permisos(parecido a index)
+      // Pedir permisos de ubicación
       const { status } = await Location.requestForegroundPermissionsAsync();
-      let latitude: number | null = null;
-      let longitude: number | null = null;
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        latitude = location.coords.latitude;
-        longitude = location.coords.longitude;
-      } else {
-        Alert.alert('Advertencia', 'No se otorgó permiso de ubicación. Se guardará sin coordenadas.');
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Se requiere permiso de ubicación para registrar la asistencia.');
+        return;
       }
 
-      
+      // Obtener ubicación actual
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      // Validar si está dentro del área de la empresa
+      const distance = calculateDistance(latitude, longitude, COMPANY_LATITUDE, COMPANY_LONGITUDE);
+      if (distance > COMPANY_RADIUS_KM) {
+        Alert.alert('Error', 'No estás en el área de la empresa. Acércate para registrar tu asistencia.');
+        return;
+      }
+
+      // Hora ajustada a Bolivia (UTC-4)
       const currentTime = new Date();
       const boliviaTime = new Date(currentTime.getTime() - 4 * 60 * 60 * 1000);
 
-      
+      // Insertar en Supabase (solo nombre y enviado_at)
       const { error } = await supabase.from('comment').insert([
         {
           nombre: nombre.trim(),
           enviado_at: boliviaTime.toISOString(),
-          latitude,
-          longitude,
         },
       ]);
 
@@ -53,9 +71,8 @@ export default function TabTwoScreen() {
         throw error;
       }
 
-      
       Alert.alert(
-        'Registro Completo!',
+        '¡Éxito!',
         'Tu asistencia se guardó correctamente. Gracias por usar la app.',
         [{ text: 'OK', onPress: () => setNombre('') }]
       );
