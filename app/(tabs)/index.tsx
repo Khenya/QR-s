@@ -5,13 +5,12 @@ import * as Application from "expo-application";
 import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
 
-// Configurar el área permitida (ejemplo: coordenadas de INDECA)
 const ALLOWED_AREA = {
   center: {
-    latitude: -16.52343326, // Reemplaza con la latitud de INDECA
-    longitude: -68.084740, // Reemplaza con la longitud de INDECA
+    latitude: -17.462420, // Reemplaza con la latitud
+    longitude: -63.18589, // Reemplaza con la longitud
   },
-  radius: 100, // Radio en metros (100m = ~1 cuadra)
+  radius: 95, // Radio en metros (95m = ~1 cuadra)
 };
 
 export default function HomeScreen() {
@@ -219,7 +218,7 @@ export default function HomeScreen() {
         .from("scans")
         .insert([
           {
-            user_id: "demo-user",
+            name: "demo-user",
             device_id: deviceId,
             qr_code: data,
             scanned_at: boliviaTime.toISOString(),
@@ -322,7 +321,7 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.timeRemaining}>{timeRemaining}</Text>
           <Text style={styles.thankYou}>
-            Gracias por usar la app de INDECA
+            Gracias por usar la app de INDECRUZ
           </Text>
         </View>
       </View>
