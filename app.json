@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "qr-scan-app",
-    "slug": "qr-scan-app",
+    "slug": "indecruz",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/indecruz.png",
@@ -66,8 +66,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "44b84120-c7e3-4abe-99b5-12fb834317a0"
+        "projectId": "7db20384-c65a-4231-8804-2dbbdf7f5aae"
       }
-    }
+    },
+    "owner": "acuba"
   }
 }
