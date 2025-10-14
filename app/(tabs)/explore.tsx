@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet,TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet,TextInput, TouchableOpacity, Alert, ActivityIndicator, View } from 'react-native';
 import { useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
@@ -7,8 +7,6 @@ import { supabase } from '../../src/utils/supabase';
 //import { ExternalLink } from '@/components/external-link';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Fonts } from '@/constants/theme';
 
 export default function TabTwoScreen() {
@@ -69,27 +67,23 @@ export default function TabTwoScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#165290', dark: '#165290' }}
-      headerImage={
+    <View style={styles.container}>
+      {/* Logo centrado */}
+      <View style={styles.logoContainer}>
         <Image
-          source={require('../../assets/images/indeca.png')}
-          style={styles.headerImage}
+          source={require('../../assets/images/indecruz.png')}
+          style={styles.logo}
           contentFit="contain"
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-            color: Colors.light.primary,
-          }}>
-          Registro Manual
-        </ThemedText>
-      </ThemedView>
+      </View>
+
+      {/* Texto grande */}
+      <ThemedText style={styles.bigPrompt}>
+        ¿Olvidaste tu celular?
+      </ThemedText>
+
       <ThemedText style={styles.prompt}>
-        ¿Olvidaste tu celular? Ingresa tu nombre para registrar tu llegada.
+        Ingresa tu nombre para registrar tu llegada.
       </ThemedText>
       <TextInput
         style={styles.input}
@@ -103,7 +97,8 @@ export default function TabTwoScreen() {
       <TouchableOpacity
         style={[styles.button, isProcessing && styles.buttonDisabled]}
         onPress={handleSubmit}
-        disabled={isProcessing}>
+        disabled={isProcessing}
+      >
         {isProcessing ? (
           <ActivityIndicator color={Colors.light.background} />
         ) : (
@@ -112,28 +107,42 @@ export default function TabTwoScreen() {
           </ThemedText>
         )}
       </TouchableOpacity>
-    </ParallaxScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  logo: {
     width: 200,
     height: 200,
-    position: 'absolute',
-    bottom: -50,
-    right: 20,
+    resizeMode: 'contain',
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  bigPrompt: {
+    fontSize: 26,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: Colors.light.primary,
+    marginBottom: 10,
+    fontFamily: Fonts.rounded,
   },
   prompt: {
     fontSize: 16,
     textAlign: 'center',
-    marginVertical: 20,
-    lineHeight: 22,
+    marginBottom: 20,
     color: Colors.light.text,
+    paddingHorizontal: 10,
   },
   input: {
     borderWidth: 2,
@@ -145,7 +154,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
     marginBottom: 20,
-    alignSelf: 'center',
     color: Colors.light.text,
   },
   button: {
