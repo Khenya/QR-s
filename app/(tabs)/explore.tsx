@@ -1,13 +1,35 @@
-import { Image } from 'expo-image';
-import { StyleSheet,TextInput, TouchableOpacity, Alert, ActivityIndicator, View } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, View } from 'react-native';
 import { useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
-//import { Collapsible } from '@/components/ui/collapsible';
-//import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
+import { Image } from 'expo-image';
 import { Colors, Fonts } from '@/constants/theme';
+
+
+const ALLOWED_AREA = {
+  center: {
+    latitude: -17.462420, 
+    longitude: -63.18589,
+  },
+  radius: 95, 
+};
+
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371e3; 
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; 
+};
 
 export default function TabTwoScreen() {
   const [nombre, setNombre] = useState('');
@@ -21,29 +43,41 @@ export default function TabTwoScreen() {
 
     setIsProcessing(true);
     try {
-      // permisos(parecido a index)
+      
       const { status } = await Location.requestForegroundPermissionsAsync();
-      let latitude: number | null = null;
-      let longitude: number | null = null;
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        latitude = location.coords.latitude;
-        longitude = location.coords.longitude;
-      } else {
-        Alert.alert('Advertencia', 'No se otorgó permiso de ubicación. Se guardará sin coordenadas.');
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Se requiere permiso de ubicación para registrar la asistencia.');
+        return;
       }
 
       
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        ALLOWED_AREA.center.latitude,
+        ALLOWED_AREA.center.longitude
+      );
+      if (distance > ALLOWED_AREA.radius) {
+        Alert.alert(
+          'Fuera del área de trabajo',
+          `Debes estar dentro del área de trabajo para registrar tu asistencia.\nDistancia actual: ${Math.round(distance)}m\nDistancia máxima: ${ALLOWED_AREA.radius}m`
+        );
+        return;
+      }
+
+  
       const currentTime = new Date();
       const boliviaTime = new Date(currentTime.getTime() - 4 * 60 * 60 * 1000);
 
-      
+    
       const { error } = await supabase.from('comment').insert([
         {
           nombre: nombre.trim(),
           enviado_at: boliviaTime.toISOString(),
-          latitude,
-          longitude,
         },
       ]);
 
@@ -52,7 +86,6 @@ export default function TabTwoScreen() {
         throw error;
       }
 
-      
       Alert.alert(
         'Registro Completo!',
         'Tu asistencia se guardó correctamente. Gracias por usar la app.',
@@ -115,8 +148,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
   },
   logoContainer: {
