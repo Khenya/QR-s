@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "qr-scan-app",
-    "slug": "indecruz",
+    "slug": "qr-scan-indeca-khenya-2024",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/indecruz.png",
@@ -66,9 +66,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7db20384-c65a-4231-8804-2dbbdf7f5aae"
+        "projectId": "b2c93b90-ebec-45e0-84cf-cfce8e91a81d"
       }
     },
-    "owner": "acuba"
+    "owner": "khenya"
   }
 }
