@@ -1,7 +1,7 @@
 const QRCode = require("qrcode");
 const fs = require("fs");
 
-const sessionId = "asistencia_entrada";
+const sessionId = "asistencia";
 
 QRCode.toFile(
   "./qr_asistencia.png",

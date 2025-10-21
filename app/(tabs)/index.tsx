@@ -8,10 +8,10 @@ import { supabase } from '../../src/utils/supabase';
 // Configurar el área permitida (ejemplo: coordenadas de INDECA)
 const ALLOWED_AREA = {
   center: {
-    latitude: -16.52343326, // Reemplaza con la latitud de INDECA
-    longitude: -68.084740, // Reemplaza con la longitud de INDECA
+    latitude: -16.606419, // Reemplaza con la latitud de INDECA
+    longitude: -68.248030, // Reemplaza con la longitud de INDECA
   },
-  radius: 100, // Radio en metros (100m = ~1 cuadra)
+  radius: 30, // Radio en metros (100m = ~1 cuadra)
 };
 
 export default function HomeScreen() {
@@ -121,7 +121,7 @@ export default function HomeScreen() {
         const lastScanTime = new Date(data[0].scanned_at);
         const now = new Date();
         const timeDiff = now.getTime() - lastScanTime.getTime();
-        const twoHoursInMs = 2 * 60 * 60 * 1000;
+        const twoHoursInMs = 1 * 60 * 60 * 1000;
 
         if (timeDiff < twoHoursInMs) {
           setCanScan(false);
