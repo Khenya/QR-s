@@ -6,11 +6,11 @@ import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
 
 const ALLOWED_AREA = {
-  center: {
-    latitude: -16.606419, // Reemplaza con la latitud de INDECA
-    longitude: -68.248030, // Reemplaza con la longitud de INDECA
+   center: {
+    latitude: -17.462420, 
+    longitude: -63.18589,
   },
-  radius: 30, // Radio en metros (100m = ~1 cuadra)
+  radius: 95, 
 };
 
 export default function HomeScreen() {
