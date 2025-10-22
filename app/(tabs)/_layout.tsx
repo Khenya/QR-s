@@ -1,3 +1,4 @@
+// con comentarios
 import { Tabs } from 'expo-router';
 import React from 'react';
 
@@ -38,3 +39,13 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+// sin comentarios 
+// import { Slot } from 'expo-router';
+// import React from 'react';
+
+// // ...existing code...
+// export default function TabLayout() {
+//   return <Slot />;
+// }
+// // ...existing code...

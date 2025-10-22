@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "qr-scan-app",
-    "slug": "qr-scan-app",
+    "name": "INDECA",
+    "slug": "qr-scan-indeca-khenya-2024",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -58,15 +58,16 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to record your check-in coordinates."
         }
       ]
-    ],
+    ], 
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "khenya",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "44b84120-c7e3-4abe-99b5-12fb834317a0"
+        "projectId": "b2c93b90-ebec-45e0-84cf-cfce8e91a81d"
       }
     }
   }
