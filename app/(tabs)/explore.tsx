@@ -12,7 +12,7 @@ const ALLOWED_AREA = {
     latitude: -17.462420, 
     longitude: -63.18589,
   },
-  radius: 95, 
+  radius: 30, 
 };
 
 
