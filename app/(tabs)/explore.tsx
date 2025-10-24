@@ -1,23 +1,18 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet,TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, View } from 'react-native';
 import { useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '../../src/utils/supabase';
-//import { Collapsible } from '@/components/ui/collapsible';
-//import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Image } from 'expo-image';
 import { Colors, Fonts } from '@/constants/theme';
 
 
 const ALLOWED_AREA = {
   center: {
-    latitude: -18.462420, 
-    longitude: -63.18589,
+    latitude: -16.606419, // Reemplaza con la latitud de INDECA
+    longitude: -68.248030, // Reemplaza con la longitud de INDECA
   },
-  radius: 95, 
+  radius: 30, // Radio en metros (100m = ~1 cuadra)
 };
 
 
@@ -48,29 +43,41 @@ export default function TabTwoScreen() {
 
     setIsProcessing(true);
     try {
-      // permisos(parecido a index)
+      
       const { status } = await Location.requestForegroundPermissionsAsync();
-      let latitude: number | null = null;
-      let longitude: number | null = null;
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        latitude = location.coords.latitude;
-        longitude = location.coords.longitude;
-      } else {
-        Alert.alert('Advertencia', 'No se otorgó permiso de ubicación. Se guardará sin coordenadas.');
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Se requiere permiso de ubicación para registrar la asistencia.');
+        return;
       }
 
       
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        ALLOWED_AREA.center.latitude,
+        ALLOWED_AREA.center.longitude
+      );
+      if (distance > ALLOWED_AREA.radius) {
+        Alert.alert(
+          'Fuera del área de trabajo',
+          `Debes estar dentro del área de trabajo para registrar tu asistencia.\nDistancia actual: ${Math.round(distance)}m\nDistancia máxima: ${ALLOWED_AREA.radius}m`
+        );
+        return;
+      }
+
+  
       const currentTime = new Date();
       const boliviaTime = new Date(currentTime.getTime() - 4 * 60 * 60 * 1000);
 
-      
+    
       const { error } = await supabase.from('comment').insert([
         {
           nombre: nombre.trim(),
           enviado_at: boliviaTime.toISOString(),
-          latitude,
-          longitude,
         },
       ]);
 
@@ -79,7 +86,6 @@ export default function TabTwoScreen() {
         throw error;
       }
 
-      
       Alert.alert(
         'Registro Completo!',
         'Tu asistencia se guardó correctamente. Gracias por usar la app.',
@@ -94,27 +100,23 @@ export default function TabTwoScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#165290', dark: '#165290' }}
-      headerImage={
+    <View style={styles.container}>
+      {/* Logo centrado */}
+      <View style={styles.logoContainer}>
         <Image
-          source={require('../../assets/images/indeca.png')}
-          style={styles.headerImage}
+          source={require('../../assets/images/logo.png')}
+          style={styles.logo}
           contentFit="contain"
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-            color: Colors.light.primary,
-          }}>
-          Registro Manual
-        </ThemedText>
-      </ThemedView>
+      </View>
+
+      {/* Texto grande */}
+      <ThemedText style={styles.bigPrompt}>
+        ¿Olvidaste tu celular?
+      </ThemedText>
+
       <ThemedText style={styles.prompt}>
-        ¿Olvidaste tu celular? Ingresa tu nombre para registrar tu llegada.
+        Ingresa tu nombre para registrar tu llegada.
       </ThemedText>
       <TextInput
         style={styles.input}
@@ -128,7 +130,8 @@ export default function TabTwoScreen() {
       <TouchableOpacity
         style={[styles.button, isProcessing && styles.buttonDisabled]}
         onPress={handleSubmit}
-        disabled={isProcessing}>
+        disabled={isProcessing}
+      >
         {isProcessing ? (
           <ActivityIndicator color={Colors.light.background} />
         ) : (
@@ -137,28 +140,42 @@ export default function TabTwoScreen() {
           </ThemedText>
         )}
       </TouchableOpacity>
-    </ParallaxScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  logo: {
     width: 200,
     height: 200,
-    position: 'absolute',
-    bottom: -50,
-    right: 20,
+    resizeMode: 'contain',
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  bigPrompt: {
+    fontSize: 26,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: Colors.light.primary,
+    marginBottom: 10,
+    fontFamily: Fonts.rounded,
   },
   prompt: {
     fontSize: 16,
     textAlign: 'center',
-    marginVertical: 20,
-    lineHeight: 22,
+    marginBottom: 20,
     color: Colors.light.text,
+    paddingHorizontal: 10,
   },
   input: {
     borderWidth: 2,
@@ -170,7 +187,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
     marginBottom: 20,
-    alignSelf: 'center',
     color: Colors.light.text,
   },
   button: {
