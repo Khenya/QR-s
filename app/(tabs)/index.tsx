@@ -11,7 +11,7 @@ const ALLOWED_AREA = {
     latitude: -16.606419, // Reemplaza con la latitud de INDECA
     longitude: -68.248030, // Reemplaza con la longitud de INDECA
   },
-  radius: 30, // Radio en metros (100m = ~1 cuadra)
+  radius: 50, // Radio en metros (100m = ~1 cuadra)
 };
 
 export default function HomeScreen() {

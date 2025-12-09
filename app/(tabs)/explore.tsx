@@ -7,13 +7,6 @@ import { Image } from 'expo-image';
 import { Colors, Fonts } from '@/constants/theme';
 
 
-const ALLOWED_AREA = {
-  center: {
-    latitude: -16.606419, // Reemplaza con la latitud de INDECA
-    longitude: -68.248030, // Reemplaza con la longitud de INDECA
-  },
-  radius: 30, // Radio en metros (100m = ~1 cuadra)
-};
 
 
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -52,24 +45,9 @@ export default function TabTwoScreen() {
 
       
       const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const { latitude, longitude } = location.coords;
 
-      
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        ALLOWED_AREA.center.latitude,
-        ALLOWED_AREA.center.longitude
-      );
-      if (distance > ALLOWED_AREA.radius) {
-        Alert.alert(
-          'Fuera del área de trabajo',
-          `Debes estar dentro del área de trabajo para registrar tu asistencia.\nDistancia actual: ${Math.round(distance)}m\nDistancia máxima: ${ALLOWED_AREA.radius}m`
-        );
-        return;
-      }
 
-  
+    
       const currentTime = new Date();
       const boliviaTime = new Date(currentTime.getTime() - 4 * 60 * 60 * 1000);
 
